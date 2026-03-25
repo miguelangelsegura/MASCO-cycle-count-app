@@ -129,6 +129,17 @@
 
   .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:white; padding:12px 20px; border-radius:12px; font-size:13px; font-weight:500; box-shadow:0 8px 24px rgba(0,0,0,.2); transform:translateY(80px); opacity:0; transition:all .3s; z-index:999; }
   .toast.show { transform:translateY(0); opacity:1; }
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:white; border-radius:20px; padding:32px; width:100%; max-width:380px; margin:24px; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+  .modal-icon { font-size:40px; text-align:center; margin-bottom:12px; }
+  .modal-title { font-size:20px; font-weight:700; color:var(--navy); text-align:center; margin-bottom:6px; }
+  .modal-sub { font-size:13px; color:var(--muted); text-align:center; margin-bottom:20px; }
+  .modal-input { width:100%; padding:12px 16px; border:2px solid var(--border); border-radius:12px; font-family:'DM Sans',sans-serif; font-size:15px; color:var(--text); transition:border-color .15s; margin-bottom:6px; }
+  .modal-input:focus { outline:none; border-color:var(--teal); }
+  .modal-error { color:var(--red); font-size:12px; font-weight:600; margin-bottom:10px; display:none; }
+  .modal-buttons { display:flex; gap:10px; margin-top:14px; }
+  .modal-buttons .btn { flex:1; justify-content:center; }
 
   .role-selector { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
   .role-card { border:2px solid var(--border); border-radius:14px; padding:24px; text-align:center; cursor:pointer; transition:all .2s; background:white; }
@@ -168,21 +179,51 @@
       <p style="color:var(--muted);margin-top:6px;font-size:14px;">Select your role to get started.</p>
     </div>
     <div class="role-selector">
-      <div class="role-card" onclick="showView('viewDon')">
+      <div class="role-card" onclick="showPasswordModal()">
         <div class="role-icon">👔</div>
-        <div class="role-title">Don — Specialist</div>
+        <div class="role-title">Dan — Specialist</div>
         <div class="role-sub">Upload new batches & export results to JDE</div>
       </div>
-      <div class="role-card" onclick="loadDashboard()">
+      <div class="role-card" onclick="showNameModal()">
         <div class="role-icon">📦</div>
-        <div class="role-title">Counter</div>
+        <div class="role-title">Cycle Counter</div>
         <div class="role-sub">Pick a batch and enter your counts</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ VIEW: DON'S PANEL ══ -->
+<!-- ══ MODAL: PASSWORD (Dan) ══ -->
+<div class="modal-overlay" id="modalPassword">
+  <div class="modal">
+    <div class="modal-icon">🔐</div>
+    <div class="modal-title">Specialist Access</div>
+    <div class="modal-sub">Enter your password to continue</div>
+    <input class="modal-input" type="password" id="passwordInput"
+           placeholder="Password" onkeydown="if(event.key==='Enter') checkPassword()">
+    <div class="modal-error" id="passwordError">Incorrect password. Try again.</div>
+    <div class="modal-buttons">
+      <button class="btn btn-ghost" onclick="closeModal('modalPassword')">Cancel</button>
+      <button class="btn btn-navy" onclick="checkPassword()">Enter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: NAME (Counter) ══ -->
+<div class="modal-overlay" id="modalName">
+  <div class="modal">
+    <div class="modal-icon">👷</div>
+    <div class="modal-title">Welcome!</div>
+    <div class="modal-sub">Enter your name so Dan knows who's counting</div>
+    <input class="modal-input" type="text" id="nameInput"
+           placeholder="Your full name" onkeydown="if(event.key==='Enter') confirmName()">
+    <div class="modal-error" id="nameError">Please enter your name.</div>
+    <div class="modal-buttons">
+      <button class="btn btn-ghost" onclick="closeModal('modalName')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmName()">Let's Go →</button>
+    </div>
+  </div>
+</div>
 <div class="view" id="viewDon">
   <div class="container">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
@@ -324,6 +365,7 @@
               <th>Description</th>
               <th>Location</th>
               <th style="text-align:center;background:#1A7A3C;">QUANTITY ← copy this</th>
+              <th>Counted By</th>
               <th style="text-align:center;">Status</th>
             </tr>
           </thead>
@@ -397,7 +439,58 @@ async function loadDonBatches() {
   }).join('');
 }
 
-let currentResultsBatchId = null;
+let counterName = null;
+
+// ── Modals ─────────────────────────────────────────────────────────────────
+function showPasswordModal() {
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('passwordError').style.display = 'none';
+  document.getElementById('modalPassword').classList.add('show');
+  setTimeout(() => document.getElementById('passwordInput').focus(), 100);
+}
+
+function showNameModal() {
+  document.getElementById('nameInput').value = '';
+  document.getElementById('nameError').style.display = 'none';
+  document.getElementById('modalName').classList.add('show');
+  setTimeout(() => document.getElementById('nameInput').focus(), 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function checkPassword() {
+  const pw = document.getElementById('passwordInput').value;
+  if (pw === 'masco2026') {
+    closeModal('modalPassword');
+    showView('viewDon');
+  } else {
+    document.getElementById('passwordError').style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordInput').focus();
+  }
+}
+
+function confirmName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) {
+    document.getElementById('nameError').style.display = 'block';
+    return;
+  }
+  counterName = name;
+  closeModal('modalName');
+  loadDashboard();
+}
+
+// Close modal on overlay click
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+
+
 
 async function openResults(id, e) {
   if (e) e.stopPropagation();
@@ -433,6 +526,7 @@ async function openResults(id, e) {
                  background:${counted?'var(--ltgreen)':'var(--ltred)'};">
         ${counted ? total : '⚠️ Missing'}
       </td>
+      <td style="font-size:12px;color:var(--muted);">${c.by||'—'}</td>
       <td style="text-align:center;">
         ${counted
           ? '<span class="badge badge-done">✓ Counted</span>'
@@ -604,7 +698,7 @@ async function calcRow(idx) {
     try {
       const res = await fetch('/api/count', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ batch_id: currentBatchId, idx, upb, boxes })
+        body: JSON.stringify({ batch_id: currentBatchId, idx, upb, boxes, counter_name: counterName })
       });
       const d = await res.json();
       updateCountProgress(d.done, d.total_items);
