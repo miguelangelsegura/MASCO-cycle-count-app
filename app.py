@@ -175,11 +175,12 @@ def save_count():
     idx   = str(data.get("idx"))
     upb   = int(data.get("upb", 0))
     boxes = int(data.get("boxes", 0))
+    name  = data.get("counter_name", "Unknown")
     conn  = get_db()
     row   = conn.execute("SELECT counts_json, items_json FROM batches WHERE id=?", (bid,)).fetchone()
     if not row: conn.close(); return jsonify({"error": "Not found"}), 404
     counts = json.loads(row["counts_json"] or "{}")
-    counts[idx] = {"upb": upb, "boxes": boxes}
+    counts[idx] = {"upb": upb, "boxes": boxes, "by": name}
     total_items = len(json.loads(row["items_json"] or "[]"))
     done = sum(1 for v in counts.values() if v.get("upb") and v.get("boxes"))
     conn.execute("UPDATE batches SET counts_json=? WHERE id=?", (json.dumps(counts), bid))
