@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masco Canada — Cycle Count</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy:   #1B3A6B;
+    --blue:   #2E5FA3;
+    --teal:   #1E7B74;
+    --amber:  #D97706;
+    --green:  #15803D;
+    --red:    #DC2626;
+    --bg:     #F0F4F8;
+    --card:   #FFFFFF;
+    --border: #DDE3EC;
+    --text:   #1E2A3A;
+    --muted:  #6B7A90;
+    --ltgreen:#DCFCE7;
+    --ltamber:#FEF3C7;
+    --ltred:  #FEE2E2;
+    --ltblue: #EEF3FB;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--navy);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo .dot {
+    width: 10px; height: 10px;
+    background: var(--teal);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:.6; transform:scale(1.3); }
+  }
+  .header-logo span {
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  .header-badge {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .card-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .card-sub   { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card-body  { padding: 24px; }
+
+  /* ── Upload Zone ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--teal);
+    background: #F0FAF9;
+  }
+  .upload-zone.dragover { transform: scale(1.01); }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .upload-sub   { font-size: 13px; color: var(--muted); }
+  .upload-zone input { display: none; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+  }
+  .btn-primary { background: var(--teal); color: white; }
+  .btn-primary:hover { background: #176860; transform: translateY(-1px); }
+  .btn-navy  { background: var(--navy); color: white; }
+  .btn-navy:hover  { background: #142d56; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { background: #0f6b30; transform: translateY(-1px); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+  /* ── Batch Info Bar ── */
+  .batch-bar {
+    background: linear-gradient(135deg, var(--navy), var(--blue));
+    color: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .batch-bar .label { font-size: 11px; opacity: .7; text-transform: uppercase; letter-spacing: 1px; }
+  .batch-bar .value { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .batch-bar .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── Progress ── */
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-bar-bg {
+    background: var(--border);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-bar-fill {
+    background: linear-gradient(90deg, var(--teal), var(--green));
+    height: 100%;
+    border-radius: 99px;
+    transition: width .4s ease;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .progress-label strong { color: var(--green); }
+
+  /* ── Table ── */
+  .table-wrap {
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--navy);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 12px 14px;
+    text-align: left;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--ltblue); }
+  tbody tr.counted { background: #F0FDF4; }
+  td { padding: 10px 14px; font-size: 13px; vertical-align: middle; }
+  .td-item { font-weight: 600; color: var(--navy); font-family: 'DM Mono', monospace; font-size: 12px; }
+  .td-desc { color: var(--text); max-width: 200px; }
+  .td-loc  { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; }
+  .td-total {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--green);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+  }
+  .td-total.empty { color: var(--border); }
+
+  /* ── Inputs ── */
+  .input-pair { display: flex; gap: 6px; align-items: center; }
+  .num-input {
+    width: 70px;
+    padding: 7px 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: white;
+    transition: border-color .15s;
+    -moz-appearance: textfield;
+  }
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .num-input:focus { outline: none; border-color: var(--teal); }
+  .num-input.filled { border-color: var(--amber); background: var(--ltamber); }
+  .times-sign { color: var(--muted); font-size: 14px; font-weight: 600; }
+
+  /* ── Status badge ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-done    { background: var(--ltgreen); color: var(--green); }
+  .badge-pending { background: var(--ltred); color: var(--red); }
+
+  /* ── Views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Summary Table ── */
+  .summary-table th { background: var(--teal); }
+  .sum-qty {
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--green);
+    text-align: right;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--navy);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s;
+    z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .container { padding: 16px 12px; }
+    .batch-bar { flex-direction: column; align-items: flex-start; }
+    .header { padding: 0 16px; }
+    .num-input { width: 58px; font-size: 14px; }
+    td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <div class="dot"></div>
+    <span>Masco Canada — Cycle Count</span>
+  </div>
+  <div class="header-badge" id="headerBadge">Ready</div>
+</div>
+
+<!-- ══ VIEW: UPLOAD ══ -->
+<div class="view active" id="viewUpload">
+  <div class="container">
+    <div style="margin-bottom:24px;">
+      <h1 style="font-size:26px;font-weight:700;color:var(--navy);">Cycle Count Tool</h1>
+      <p style="color:var(--muted);margin-top:6px;font-size:14px;">
+        Drop the JDE report to get started. Counters fill in their numbers, Don exports to JDE.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#EEF3FB;">📥</div>
+        <div>
+          <div class="card-title">Upload JDE Report</div>
+          <div class="card-sub">Drop the CSV file Don downloads from JDE every morning</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept=".csv">
+          <div class="upload-icon">📄</div>
+          <div class="upload-title">Drag & drop your JDE CSV here</div>
+          <div class="upload-sub" style="margin-top:8px;">or click to browse</div>
+          <button class="btn btn-primary" style="margin-top:20px;" onclick="document.getElementById('fileInput').click()">
+            Browse File
+          </button>
+        </div>
+        <div id="uploadStatus" style="display:none;margin-top:16px;padding:14px;border-radius:10px;background:var(--ltgreen);color:var(--green);font-weight:600;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW: COUNTER ══ -->
+<div class="view" id="viewCounter">
+  <div class="container">
+
+    <div class="batch-bar" id="batchBar">
+      <div>
+        <div class="label">Batch</div>
+        <div class="value" id="batchNum">—</div>
+      </div>
+      <div>
+        <div class="label">Description</div>
+        <div class="value" id="batchDesc" style="font-size:15px;">—</div>
+      </div>
+      <div class="pills">
+        <div class="pill" id="pillItems">— items</div>
+        <div class="pill" id="pillDone">0 counted</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Progress</span>
+        <strong id="progressText">0 / 0 items counted</strong>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-icon" style="background:#F0FAF9;">📦</div>
+        <div>
+          <div class="card-title">Enter Counts</div>
+          <div class="card-sub">For each item: how many units in one box × how many boxes</div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin:0;">
+        <table id="counterTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item Number</th>
+              <th>Description</th>
+              <th>Location</th>
+              <th>Units / Box</th>
+              <th>× Boxes</th>
+              <th style="text-align:center;">Total</th>
+              <th style="text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="counterBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="showUpload()">← New Batch</button>
+      <button class="btn btn-navy" onclick="showSummary()">View Summary & Export →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW: SUMMARY (Don's view) ══ -->
+<div class="view" id="viewSummary">
+  <div class="container">
+
+    <div class="batch-bar">
+      <div>
+        <div class="label">Export Ready</div>
+        <div class="value" id="sumBatch">—</div>
+      </div>
+      <div class="pills">
+        <div class="pill" id="sumPillDone">— counted</div>
+        <div class="pill" id="sumPillMissing" style="background:rgba(220,38,38,0.3);">— missing</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-icon" style="background:#DCFCE7;">📋</div>
+        <div>
+          <div class="card-title">Final Counts — Ready for JDE</div>
+          <div class="card-sub">Download the Excel file → open it → copy column A → paste into JDE Quantity column</div>
+        </div>
+      </div>
+      <div class="card-body" style="padding-bottom:8px;">
+        <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+          <button class="btn btn-green" id="exportBtn" onclick="exportFile()">
+            ⬇️ Download JDE Upload File
+          </button>
+          <button class="btn btn-ghost" onclick="showCounter()">← Back to Count</button>
+        </div>
+        <div class="table-wrap">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Item Number</th>
+                <th>Description</th>
+                <th>Location</th>
+                <th style="text-align:right;">U/Box</th>
+                <th style="text-align:right;">Boxes</th>
+                <th style="text-align:right;">TOTAL QTY</th>
+                <th style="text-align:center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentBatch = null;
+let itemsData = [];
+
+// ── Upload ─────────────────────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+const fileInput  = document.getElementById('fileInput');
+
+uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+uploadZone.addEventListener('click', () => fileInput.click());
+
+async function handleFile(file) {
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  status.style.display = 'block';
+  status.style.background = 'var(--ltblue)';
+  status.style.color = 'var(--blue)';
+  status.textContent = `⏳ Reading ${file.name}...`;
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res  = await fetch('/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    status.style.background = 'var(--ltgreen)';
+    status.style.color      = 'var(--green)';
+    status.textContent = `✅ Loaded batch ${data.batch} — ${data.count} items found. Loading counter sheet...`;
+
+    currentBatch = data.batch;
+    itemsData    = data.items;
+
+    setTimeout(() => loadCounter(data), 800);
+  } catch(e) {
+    status.style.background = 'var(--ltred)';
+    status.style.color      = 'var(--red)';
+    status.textContent = `❌ Error: ${e.message}`;
+  }
+}
+
+// ── Counter View ───────────────────────────────────────────────────────
+function loadCounter(data) {
+  document.getElementById('batchNum').textContent  = data.batch;
+  document.getElementById('batchDesc').textContent = data.description;
+  document.getElementById('pillItems').textContent = `${data.count} items`;
+  document.getElementById('sumBatch').textContent  = data.batch;
+  document.getElementById('headerBadge').textContent = `Batch ${data.batch}`;
+
+  const tbody = document.getElementById('counterBody');
+  tbody.innerHTML = '';
+
+  data.items.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.id = `row-${idx}`;
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:12px;">${idx+1}</td>
+      <td class="td-item">${item.item}</td>
+      <td class="td-desc">${item.desc}</td>
+      <td class="td-loc">${item.location || '—'}</td>
+      <td>
+        <input class="num-input" id="upb-${idx}" type="number" min="0"
+               placeholder="0" onchange="calcRow(${idx})" oninput="calcRow(${idx})">
+      </td>
+      <td>
+        <input class="num-input" id="boxes-${idx}" type="number" min="0"
+               placeholder="0" onchange="calcRow(${idx})" oninput="calcRow(${idx})">
+      </td>
+      <td class="td-total empty" id="total-${idx}">—</td>
+      <td style="text-align:center;" id="status-${idx}">
+        <span class="badge badge-pending">Pending</span>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  updateProgress(0, data.count);
+  showView('viewCounter');
+}
+
+async function calcRow(idx) {
+  const upbEl   = document.getElementById(`upb-${idx}`);
+  const boxesEl = document.getElementById(`boxes-${idx}`);
+  const totalEl = document.getElementById(`total-${idx}`);
+  const statusEl= document.getElementById(`status-${idx}`);
+  const row     = document.getElementById(`row-${idx}`);
+
+  const upb   = parseInt(upbEl.value)   || 0;
+  const boxes = parseInt(boxesEl.value) || 0;
+  const total = upb * boxes;
+
+  upbEl.classList.toggle('filled',   upb > 0);
+  boxesEl.classList.toggle('filled', boxes > 0);
+
+  if (upb > 0 && boxes > 0) {
+    totalEl.textContent = total;
+    totalEl.className   = 'td-total';
+    statusEl.innerHTML  = '<span class="badge badge-done">✓ Done</span>';
+    row.classList.add('counted');
+  } else {
+    totalEl.textContent = '—';
+    totalEl.className   = 'td-total empty';
+    statusEl.innerHTML  = '<span class="badge badge-pending">Pending</span>';
+    row.classList.remove('counted');
+  }
+
+  // Save to server
+  try {
+    const res = await fetch('/save_count', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batch: currentBatch, idx, upb, boxes })
+    });
+    const d = await res.json();
+    updateProgress(d.done, d.total_items);
+  } catch(e) {}
+}
+
+function updateProgress(done, total) {
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('progressBar').style.width  = pct + '%';
+  document.getElementById('progressText').textContent = `${done} / ${total} items counted`;
+  document.getElementById('pillDone').textContent     = `${done} counted`;
+}
+
+// ── Summary View ───────────────────────────────────────────────────────
+async function showSummary() {
+  const res  = await fetch(`/summary/${currentBatch}`);
+  const data = await res.json();
+
+  const tbody = document.getElementById('summaryBody');
+  tbody.innerHTML = '';
+
+  let missing = 0;
+  data.items.forEach((item, idx) => {
+    if (!item.counted) missing++;
+    const tr = document.createElement('tr');
+    tr.style.background = item.counted ? '#F0FDF4' : '#FFF9F9';
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:12px;">${idx+1}</td>
+      <td class="td-item">${item.item}</td>
+      <td class="td-desc">${item.desc}</td>
+      <td class="td-loc">${item.location || '—'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;">${item.upb||'—'}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;">${item.boxes||'—'}</td>
+      <td class="sum-qty">${item.total||'0'}</td>
+      <td style="text-align:center;">${item.counted
+        ? '<span class="badge badge-done">✓</span>'
+        : '<span class="badge badge-pending">Missing</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('sumPillDone').textContent    = `${data.done} counted`;
+  document.getElementById('sumPillMissing').textContent = `${missing} missing`;
+
+  showView('viewSummary');
+}
+
+function exportFile() {
+  window.location = `/export/${currentBatch}`;
+  toast('📥 Downloading Excel file...');
+}
+
+// ── Nav helpers ────────────────────────────────────────────────────────
+function showUpload()  { showView('viewUpload'); }
+function showCounter() { showView('viewCounter'); }
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
