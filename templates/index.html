@@ -314,6 +314,7 @@
               <th>#</th><th>Item Number</th><th>Description</th>
               <th>Location</th><th>Units/Box</th><th>× Boxes</th>
               <th style="text-align:center;">Total</th><th style="text-align:center;">✓</th>
+              <th>Last Updated By</th>
             </tr>
           </thead>
           <tbody id="countBody"></tbody>
@@ -660,6 +661,9 @@ async function openBatch(id) {
       <td class="td-total ${total?'':'empty'}" id="total-${idx}">${total||'—'}</td>
       <td style="text-align:center;" id="status-${idx}">
         ${upb&&boxes ? '<span class="badge badge-done">✓</span>' : '<span class="badge badge-pending">—</span>'}
+      </td>
+      <td style="font-size:11px;color:var(--muted);" id="by-${idx}">
+        ${upb&&boxes ? (data.counts[String(idx)]?.by||'—') : '—'}
       </td>`;
     tbody.appendChild(tr);
   });
@@ -686,10 +690,14 @@ async function calcRow(idx) {
     totalEl.textContent = total; totalEl.className = 'td-total';
     statusEl.innerHTML  = '<span class="badge badge-done">✓</span>';
     row.classList.add('counted');
+    const byEl = document.getElementById(`by-${idx}`);
+    if (byEl) byEl.textContent = counterName || '—';
   } else {
     totalEl.textContent = '—'; totalEl.className = 'td-total empty';
     statusEl.innerHTML  = '<span class="badge badge-pending">—</span>';
     row.classList.remove('counted');
+    const byEl = document.getElementById(`by-${idx}`);
+    if (byEl) byEl.textContent = '—';
   }
 
   // Debounce save
@@ -715,29 +723,79 @@ function updateCountProgress(done, total) {
 
 // ── Auto-refresh ───────────────────────────────────────────────────────────
 let lastTyped = 0;
-document.addEventListener('input', () => { lastTyped = Date.now(); });
+let focusedIdx = null;
 
-// Specialist dashboard — refresh every 10 seconds
+document.addEventListener('input', () => { lastTyped = Date.now(); });
+document.addEventListener('focusin',  e => { if (e.target.classList.contains('num-input')) focusedIdx = e.target.id; });
+document.addEventListener('focusout', e => { if (e.target.classList.contains('num-input')) focusedIdx = null; });
+
+// Specialist dashboard — refresh every 5 seconds
 setInterval(() => {
   const activeView = document.querySelector('.view.active');
   if (activeView && activeView.id === 'viewDon') {
     loadDonBatches();
   }
-}, 10000);
+}, 5000);
 
-// Counter counting view — refresh only if not typing
-setInterval(() => {
+// Counter counting view — full table refresh every 5 seconds
+// Preserves the value of whichever input is currently focused
+setInterval(async () => {
   const activeView = document.querySelector('.view.active');
-  if (activeView && activeView.id === 'viewCount' && currentBatchId) {
-    const secondsSinceTyping = (Date.now() - lastTyped) / 1000;
-    if (secondsSinceTyping > 5) {
-      // Silently refresh just the progress — don't rebuild the whole table
-      fetch(`/api/batch/${currentBatchId}`)
-        .then(r => r.json())
-        .then(d => updateCountProgress(d.done, d.total));
-    }
-  }
-}, 10000);
+  if (!activeView || activeView.id !== 'viewCount' || !currentBatchId) return;
+
+  const secondsSinceTyping = (Date.now() - lastTyped) / 1000;
+  if (secondsSinceTyping < 2) return; // user is actively typing — skip
+
+  try {
+    const res  = await fetch(`/api/batch/${currentBatchId}`);
+    const data = await res.json();
+
+    // Update each row's values without touching the focused input
+    data.items.forEach((item, idx) => {
+      const c     = data.counts[String(idx)] || {};
+      const upb   = c.upb   || '';
+      const boxes = c.boxes || '';
+      const total = upb && boxes ? upb * boxes : null;
+
+      const upbEl   = document.getElementById(`upb-${idx}`);
+      const boxesEl = document.getElementById(`boxes-${idx}`);
+      const totalEl = document.getElementById(`total-${idx}`);
+      const statusEl= document.getElementById(`status-${idx}`);
+      const row     = document.getElementById(`row-${idx}`);
+
+      if (!upbEl) return;
+
+      // Only update if this input is NOT currently focused
+      if (focusedIdx !== `upb-${idx}`) {
+        upbEl.value = upb;
+        upbEl.classList.toggle('filled', !!upb);
+      }
+      if (focusedIdx !== `boxes-${idx}`) {
+        boxesEl.value = boxes;
+        boxesEl.classList.toggle('filled', !!boxes);
+      }
+
+      // Always update total and status
+      if (total !== null) {
+        totalEl.textContent = total;
+        totalEl.className   = 'td-total';
+        statusEl.innerHTML  = '<span class="badge badge-done">✓</span>';
+        row.classList.add('counted');
+      } else {
+        totalEl.textContent = '—';
+        totalEl.className   = 'td-total empty';
+        statusEl.innerHTML  = '<span class="badge badge-pending">—</span>';
+        row.classList.remove('counted');
+      }
+
+      // Update last updated by
+      const byEl = document.getElementById(`by-${idx}`);
+      if (byEl) byEl.textContent = (upb && boxes && c.by) ? c.by : '—';
+    });
+
+    updateCountProgress(data.done, data.total);
+  } catch(e) {}
+}, 5000);
 
 // ── Nav ────────────────────────────────────────────────────────────────────
 function showView(id) {
