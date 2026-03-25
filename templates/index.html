@@ -170,12 +170,12 @@
     <div class="role-selector">
       <div class="role-card" onclick="showView('viewDon')">
         <div class="role-icon">👔</div>
-        <div class="role-title">Dan — Specialist</div>
+        <div class="role-title">Don — Specialist</div>
         <div class="role-sub">Upload new batches & export results to JDE</div>
       </div>
       <div class="role-card" onclick="loadDashboard()">
         <div class="role-icon">📦</div>
-        <div class="role-title">Cycle Counter</div>
+        <div class="role-title">Counter</div>
         <div class="role-sub">Pick a batch and enter your counts</div>
       </div>
     </div>
@@ -211,7 +211,7 @@
       </div>
     </div>
 
-    <!-- Batches list for Dan (with export buttons) -->
+    <!-- Batches list for Don (with export buttons) -->
     <div class="card">
       <div class="card-header">
         <div class="card-icon" style="background:var(--ltteal);">📋</div>
@@ -227,7 +227,7 @@
   </div>
 </div>
 
-<!-- ══ VIEW: Cycle Counter DASHBOARD ══ -->
+<!-- ══ VIEW: COUNTER DASHBOARD ══ -->
 <div class="view" id="viewDashboard">
   <div class="container">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
@@ -281,6 +281,55 @@
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;">
       <button class="btn btn-ghost" onclick="showView('viewDashboard');loadDashboard()">← Back to Batches</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW: RESULTS (Dan only) ══ -->
+<div class="view" id="viewResults">
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="showView('viewDon')">← Back</button>
+        <h1 style="font-size:20px;font-weight:700;color:var(--navy);">Results — <span id="resultsBatchNum"></span></h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-green" onclick="copyToClipboard()">📋 Copy Quantities</button>
+        <a id="exportLink" href="#" onclick="exportFromResults(event)" style="font-size:11px;color:var(--muted);text-decoration:underline;padding:4px 8px;">download .xlsx</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;background:var(--ltgreen);border-color:#86efac;">
+      <div class="card-body" style="padding:14px 20px;">
+        <div style="font-size:13px;color:var(--green);font-weight:600;">
+          📋 <strong>How to paste into JDE:</strong> Click "Copy Quantities" → go to JDE Cycle Count Entry → click the first Quantity cell → Ctrl+V
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:var(--ltteal);">📊</div>
+        <div>
+          <div class="card-title">Count Results</div>
+          <div class="card-sub" id="resultsSub">—</div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item Number</th>
+              <th>Description</th>
+              <th>Location</th>
+              <th style="text-align:center;background:#1A7A3C;">QUANTITY ← copy this</th>
+              <th style="text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -342,10 +391,86 @@ async function loadDonBatches() {
         </div>
       </div>
       <span class="badge badge-${done?'completed':'active'}">${done?'✓ Complete':'Active'}</span>
-      <button class="btn btn-green btn-sm" onclick="exportBatch(${b.id})">⬇️ Export</button>
+      <button class="btn btn-green btn-sm" onclick="openResults(${b.id}, event)">📋 View Results</button>
       <button class="btn btn-danger btn-sm" onclick="deleteBatch(${b.id})">🗑</button>
     </div>`;
   }).join('');
+}
+
+let currentResultsBatchId = null;
+
+async function openResults(id, e) {
+  if (e) e.stopPropagation();
+  currentResultsBatchId = id;
+  const res  = await fetch(`/api/batch/${id}`);
+  const data = await res.json();
+  if (data.error) { toast('❌ Batch not found'); return; }
+
+  document.getElementById('resultsBatchNum').textContent = `Batch ${data.batch_num}`;
+  document.getElementById('exportLink').href = `/api/export/${id}`;
+  const done = Object.values(data.counts).filter(v => v.upb && v.boxes).length;
+  document.getElementById('resultsSub').textContent =
+    `${data.batch_num} · ${data.description} · ${done} of ${data.total} items counted`;
+
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+
+  data.items.forEach((item, idx) => {
+    const c     = data.counts[String(idx)] || {};
+    const upb   = c.upb   || 0;
+    const boxes = c.boxes || 0;
+    const total = upb && boxes ? upb * boxes : null;
+    const counted = total !== null;
+    const tr = document.createElement('tr');
+    tr.style.background = counted ? '#F0FDF4' : '#FFF9F9';
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:11px;">${idx+1}</td>
+      <td class="td-item">${item.item}</td>
+      <td class="td-desc">${item.desc}</td>
+      <td class="td-loc">${item.location||'—'}</td>
+      <td style="text-align:center;font-weight:700;font-size:16px;font-family:'DM Mono',monospace;
+                 color:${counted?'var(--green)':'var(--red)'};
+                 background:${counted?'var(--ltgreen)':'var(--ltred)'};">
+        ${counted ? total : '⚠️ Missing'}
+      </td>
+      <td style="text-align:center;">
+        ${counted
+          ? '<span class="badge badge-done">✓ Counted</span>'
+          : '<span class="badge badge-pending">Not counted</span>'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  showView('viewResults');
+}
+
+async function copyToClipboard() {
+  const res  = await fetch(`/api/batch/${currentResultsBatchId}`);
+  const data = await res.json();
+  const quantities = data.items.map((item, idx) => {
+    const c = data.counts[String(idx)] || {};
+    return (c.upb && c.boxes) ? String(c.upb * c.boxes) : '0';
+  }).join('\n');
+
+  try {
+    await navigator.clipboard.writeText(quantities);
+    toast('✅ Quantities copied! Go to JDE and Ctrl+V');
+  } catch(e) {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = quantities;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('✅ Quantities copied! Go to JDE and Ctrl+V');
+  }
+}
+
+function exportFromResults(e) {
+  e.preventDefault();
+  window.location = `/api/export/${currentResultsBatchId}`;
+  toast('📥 Downloading...');
 }
 
 async function exportBatch(id) {
@@ -360,7 +485,7 @@ async function deleteBatch(id) {
   toast('🗑 Batch deleted');
 }
 
-// ── Cycle Counter Dashboard ──────────────────────────────────────────────────────
+// ── Counter Dashboard ──────────────────────────────────────────────────────
 async function loadDashboard() {
   showView('viewDashboard');
   const res  = await fetch('/api/batches');
@@ -371,7 +496,7 @@ async function loadDashboard() {
   const completed = data.filter(b => b.status === 'completed');
 
   if (!data.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><h3>No batches available</h3><p>Ask Dan to upload a JDE report to get started.</p></div>';
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><h3>No batches available</h3><p>Ask Don to upload a JDE report to get started.</p></div>';
     return;
   }
 
